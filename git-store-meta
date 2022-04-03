@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 # =============================================================================
-# Usage: git-store-meta.pl ACTION [OPTION...]
+# Usage: git-store-meta ACTION [OPTION...]
 # Store, update, or apply metadata for files revisioned by Git.
 #
 # ACTION is one of:
@@ -615,7 +615,7 @@ sub install_hooks {
     my $mask = umask; if (!defined($mask)) { $mask = 0022; }
     my $mode = 0777 & ~$mask;
     my $t;
-    my $s = escapeshellarg($GIT_STORE_META_APP . ".pl");
+    my $s = escapeshellarg($GIT_STORE_META_APP);
     my $f = defined($argv{'target'}) ? " -t " . escapeshellarg($argv{'target'}) : "";
     my $f2 = escapeshellarg(defined($argv{'target'}) ? $argv{'target'} : $GIT_STORE_META_FILENAME);
 
