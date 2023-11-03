@@ -1,4 +1,4 @@
-.TH GIT-RESTORE-MTIME 1 2021-09-04
+.TH GIT-RESTORE-MTIME 1 2022-07-27
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -11,9 +11,10 @@ recent commit that modified them
 .TP 18
 .B git-restore-mtime
 .RB [ -h ]
-.RB [ --quiet ]
-.RB [ --verbose ]
+.RB [ --quiet | --verbose ]
 .br
+.RB [ -C
+.IR DIRECTORY ]
 .RB [ --work-tree
 .IR WORKDIR ]
 .RB [ --git-dir
@@ -29,105 +30,113 @@ recent commit that modified them
 .RB [ --commit-time ]
 .RB [ --oldest-time ]
 .br
-.RB [ --skip-older-than ]
+.RB [ --skip-older-than
+.IR SECONDS ]
 .RB [ --unique-times ]
+.RB [ --version ]
 .br
-.RI [ pathspec
-.RI [ pathspec ...]]
+.RI [ PATHSPEC
+.RI [ PATHSPEC ...]]
 .SH DESCRIPTION
-Restore original modification time of files based on the date of the most
-recent commit that modified them. Useful when generating release tarballs.
+Change the modification time (mtime) of files in the work tree based on the
+date of the most recent commit that modified the file, as an attempt to
+restore the original modification time. Useful when generating release tarballs.
+
+Ignore untracked files and uncommitted deletions, additions and renames, and
+by default modifications too.
 .SH OPTIONS
 .SS Positional arguments:
 .TP 8
-.I pathspec
-only modify paths (dirs or files) matching PATHSPEC,
-relative to current directory. Default is to modify
-all non-ignored, tracked files.
+.I PATHSPEC
+Only modify paths matching \fIPATHSPEC\fR, relative to current directory.
+By default, update all but untracked files and submodules.
 .SS Optional arguments:
 .TP 8
-.BR \-h , \ \-\-help
+.BR \-h ,\  \-\-help
 show help message and exit
 .TP 8
 .BR \-\-quiet , \-q
-suppress informative messages and summary statistics.
+Suppress informative messages and summary statistics.
 .TP 8
 .BR \-\-verbose , \-v
-print additional information for each processed file.
-Overwrites --quiet.
+Print additional information for each processed file.
+Specify twice to further increase verbosity.
+.TP 8
+.BI \-C\  DIRECTORY\fR,\  \-\-cwd\  DIRECTORY
+Run as if \fBrestore-mtime\fR was started in directory \fIDIRECTORY\fR.
+This affects how \fB--work-tree\fR, \fB--git-dir\fR and \fIPATHSPEC\fR arguments
+are handled.
+See \fBgit\fR(1) for more information.
 .TP 8
 .BI \-\-git-dir\  GITDIR
-path to the git repository, by default auto-discovered
-by git by searching the current directory and its parents
-for a .git/ subfolder
+Path to the git repository, by default auto-discovered by searching
+the current directory and its parents for a \fI.git/\fR subdirectory.
 .TP 8
 .BI \-\-work-tree\  WORKDIR
-path to the work tree root, by default the parent of GITDIR
-if it was automatically discovered, or the current directory
-if GITDIR was set.
+Path to the work tree root, by default the parent of \fIGITDIR\fR if it's
+automatically discovered, or the current directory if \fIGITDIR\fR is set.
 .TP 8
-.BR \-\-force , \-f
-force execution on trees with uncommitted changes.
+.BR \-\-force ,\  \-f
+Force updating files with uncommitted modifications.
+Untracked files and uncommitted deletions, renames and additions are
+always ignored.
 .TP 8
-.BR \-\-merge , \-m
-include merge commits. Leads to more recent mtimes and
-more files per commit, thus with the same mtime (which
-may or may not be what you want). Including merge
-commits may lead to less commits being evaluated (all
-files are found sooner), which improves performance,
-sometimes substantially. But since merge commits are
-usually huge, processing them may also take longer,
-sometimes substantially. By default merge logs are
-only used for files missing from regular commit logs.
+.BR \-\-merge ,\  \-m
+Include merge commits.
+Leads to more recent times and more files per commit, thus with the same
+time, which may or may not be what you want.
+Including merge commits may lead to fewer commits being evaluated as files
+are found sooner, which can improve performance, sometimes substantially.
+But as merge commits are usually huge, processing them may also take longer.
+By default, merge commits are only used for files missing from regular commits.
 .TP 8
 .BR \-\-first-parent
-pass --first-parent to git whatchanged to hide the
-second parent from the merge commit logs. Only has any
-effect if --merge is also specified or --skip-missing
-is not specified and there were files not found in
-regular commit logs.
+Consider only the first parent, the "main branch", when evaluating merge commits.
+Only effective when merge commits are processed, either when \fB--merge\fR is
+used or when finding missing files after the first regular log search.
+See \fB--skip-missing\fR.
 .TP 8
-.BR \-\-skip-missing , \-s
-do not try to find missing files. If some files were
-not found in regular commit logs, by default it
-retries using merge commit logs for these files (if
---merge was not used already). This option disables
-this behavior, which may slightly improve performance,
-but files found only in merge commits will not be
-updated.
+.BR \-\-skip-missing ,\  \-s
+Do not try to find missing files.
+If merge commits were not evaluated with \fB--merge\fR and some files were
+not found in regular commits, by default \fBrestore-mtime\fR searches for these
+files again in the merge commits.
+This option disables this retry, so files found only in merge commits
+will not have their timestamp updated.
 .TP 8
-.BR \-\-no-directories , \-D
-do not update directory mtime for files created,
-renamed or deleted in it. Note: just modifying a file
-will not update its directory mtime.
+.BR \-\-no-directories ,\  \-D
+Do not update directory timestamps.
+By default, use the time of its most recently created, renamed or deleted file.
+Note that just modifying a file will NOT update its directory time.
 .TP 8
-.BR \-\-test , \-t
-test run: do not actually update any file
+.BR \-\-test ,\  \-t
+Test run: do not actually update any file timestamp.
 .TP 8
-.BR \-\-commit-time , \-c
-use commit time instead of author time
+.BR \-\-commit-time ,\  \-c
+Use commit time instead of author time.
 .TP 8
-.BR \-\-oldest-time , \-o
-pass --reverse to git whatchanged, so that the commit
-history for the current branch will be processed in
-reverse order (i.e. from the oldest commit to the most
-recent). This will result in a file's mtime being set
-to the time of the oldest commit to reference that
-file, instead of most recent. This option will not
-work correctly on branches where multiple files have
-been renamed with the same name.
+.BR \-\-oldest-time ,\  \-o
+Update times based on the oldest, instead of the most recent commit of a file.
+This reverses the order in which the git log is processed to emulate a
+file "creation" date. Note this will be inaccurate for files deleted and
+re-created at later dates.
 .TP 8
-.BR \-\-skip-older-than SECONDS
-Do not modify files that are older than SECONDS.
-It can significantly improve performance if fewer files
-are processed. Useful on CI builds, which can eventually
-switch workspace to different branch, but mostly performs
-builds on the same one (e.g. master).
+.BI \-\-skip-older-than\  SECONDS
+Ignore files that are currently older than \fISECONDS\fR.
+Useful in workflows that assume such files already have a correct timestamp,
+as it may improve performance by processing fewer files.
+.TP 8
+.BR \-\-skip-older-than-commit ,\  \-N
+Ignore files older than the timestamp it would be updated to.
+Such files may be considered "original", likely in the author's repository.
 .TP 8
 .BR \-\-unique-times
 Set the microseconds to a unique value per commit.
-It allows telling apart changes that would otherwise have
-identical timestamps, as git has time accuracy in seconds.
+Allows telling apart changes that would otherwise have identical timestamps,
+as git's time accuracy is in seconds.
+.TP 8
+.BR \-\-version ,\  \-V
+show program's version number and exit
 .SH KNOWN ISSUES
 Renames are poorly handled: it always changes the timestamps
 of files, even if no content was modified.
@@ -136,10 +145,14 @@ Directory timestamps are also limited to being modified
 only when files are added (created) or deleted in them.
 .br
 In very large repositories, after running \fBrestore-mtime\fR to modify
-the timestamp of several files, further git operations may emit the error
-.B fatal: mmap failed: Cannot allocate memory.
+the timestamp of several files, further git operations may emit the error:
+.br
+.B \ \ fatal: mmap failed: Cannot allocate memory.
+.br
 This is harmless, and can be fixed by running \fBgit-status\fR(1).
 .SH SEE ALSO
+.BR git (1),\  git-log (1),\  git-ls-files (1),\  git-status (1)
+.br
 .B https://github.com/MestreLion/git-tools
 .SH AUTHOR
 Rodrigo Silva (MestreLion) linux@rodrigosilva.com
